@@ -1038,7 +1038,7 @@ You grew up working class, and you [[have a chip on your shoulder]] about people
 
 /* ===================== 데이터 가공 ===================== */
 const T1 = T1RAW.split("\n").map(l => { const i = l.indexOf(" | "); return { w: l.slice(0, i).trim(), m: l.slice(i + 3).trim() }; });
-const cleanMeaning = m => m.replace(/\[(명|동|형|부)\]\s*/g, "").replace(/\s+/g, " ").trim();
+const cleanMeaning = m => m.replace(/\[(명|동|형|부)\]\s*/g, "").replace(/\s*\(=?\s*[A-Za-z][A-Za-z\s.,'=-]*\)/g, "").replace(/\s+/g, " ").trim();
 
 function splitMarked(s) { // returns [{t, ans:boolean}]
   const out = []; const re = /\[\[(.+?)\]\]/g; let last = 0, m;
