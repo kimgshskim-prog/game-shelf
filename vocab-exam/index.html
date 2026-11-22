@@ -1,0 +1,1330 @@
+<title>어휘 수행평가 모의고사</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one centered answer-sheet column; OMR-card red marks answers, everything else stays quiet. */
+:root {
+  --paper: #fbf9fb;
+  --sheet: #ffffff;
+  --ink: #1e1a22;
+  --muted: #6e6573;
+  --rule: #ead9e0;
+  --omr: #c2185b;
+  --omr-soft: #fbe7ef;
+  --ok: #1e7f55;
+  --ok-soft: #e3f4ec;
+  --bad: #c9480c;
+  --bad-soft: #fdebe1;
+  --font-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #141216; --sheet: #1d1a20; --ink: #ede8ef; --muted: #a59cab; --rule: #3a2f37;
+    --omr: #f06d9c; --omr-soft: #3a1f2b; --ok: #5fd39c; --ok-soft: #173327; --bad: #ff9a62; --bad-soft: #3b2216;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #141216; --sheet: #1d1a20; --ink: #ede8ef; --muted: #a59cab; --rule: #3a2f37;
+  --omr: #f06d9c; --omr-soft: #3a1f2b; --ok: #5fd39c; --ok-soft: #173327; --bad: #ff9a62; --bad-soft: #3b2216;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--paper); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 24px 64px;
+}
+.wrap { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+h1, h2, h3 { margin: 0; text-wrap: balance; line-height: 1.3; }
+h1 { font-size: 1.6rem; }
+h2 { font-size: 1.2rem; }
+p { margin: 0; }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--omr); outline-offset: 2px; }
+.eyebrow { font-family: var(--font-mono); font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; color: var(--omr); }
+.muted { color: var(--muted); }
+.small { font-size: .875rem; }
+
+header.top { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; border-bottom: 2px solid var(--omr); padding-bottom: 12px; }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.fact { border: 1px solid var(--rule); background: var(--sheet); border-radius: 6px; padding: 10px 12px; }
+.fact b { display: block; font-family: var(--font-mono); font-size: 1.2rem; font-variant-numeric: tabular-nums; }
+
+.modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.mode { text-align: left; background: var(--sheet); border: 1px solid var(--rule); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 6px; transition: border-color .15s; }
+.mode:hover { border-color: var(--omr); }
+.mode.primary { border: 2px solid var(--omr); background: var(--omr-soft); }
+.mode strong { font-size: 1.05rem; }
+.mode .count { font-family: var(--font-mono); font-size: .8rem; color: var(--muted); }
+.mode[disabled] { opacity: .45; cursor: not-allowed; }
+
+.btn { border: 1px solid var(--rule); background: var(--sheet); border-radius: 6px; padding: 8px 14px; }
+.btn:hover { border-color: var(--omr); }
+.btn.solid { background: var(--omr); border-color: var(--omr); color: var(--sheet); font-weight: 700; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.spread { justify-content: space-between; }
+
+/* exam sheet */
+.sheet { background: var(--sheet); border: 1px solid var(--rule); border-radius: 8px; padding: 20px; display: flex; flex-direction: column; gap: 18px; }
+.task-head { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; border-bottom: 1px solid var(--rule); padding-bottom: 8px; }
+.task-tag { font-family: var(--font-mono); font-weight: 600; font-size: .8rem; border: 1.5px solid var(--ink); padding: 0 6px; }
+.task-head h2 { font-size: 1rem; }
+.q { display: flex; flex-direction: column; gap: 8px; padding: 6px 0; min-width: 0; }
+.q + .q { border-top: 1px dashed var(--rule); padding-top: 14px; }
+.qnum { font-family: var(--font-mono); color: var(--muted); font-variant-numeric: tabular-nums; margin-right: 6px; }
+.word { font-size: 1.25rem; font-weight: 700; }
+.choices { display: grid; gap: 6px; }
+.choice { display: flex; gap: 10px; align-items: flex-start; text-align: left; background: transparent; border: 1px solid var(--rule); border-radius: 6px; padding: 8px 10px; }
+.choice:hover { border-color: var(--omr); }
+.bubble { flex: none; width: 1.6em; height: 1.6em; border-radius: 50%; border: 1.5px solid var(--omr); color: var(--omr); display: inline-grid; place-items: center; font-family: var(--font-mono); font-size: .8rem; }
+.choice.sel { border-color: var(--omr); }
+.choice.sel .bubble { background: var(--omr); color: var(--sheet); }
+.choice.right { border-color: var(--ok); background: var(--ok-soft); }
+.choice.right .bubble { border-color: var(--ok); background: var(--ok); color: var(--sheet); }
+.choice.wrong { border-color: var(--bad); background: var(--bad-soft); }
+.choice.wrong .bubble { border-color: var(--bad); background: var(--bad); color: var(--sheet); }
+.ko { color: var(--muted); }
+.en { font-size: 1.05rem; overflow-wrap: anywhere; }
+.blank { font-family: var(--font-mono); color: var(--omr); white-space: nowrap; letter-spacing: .12em; font-weight: 600; }
+.blank3 { font-family: var(--font-mono); color: var(--omr); font-weight: 600; border-bottom: 1.5px solid var(--omr); padding: 0 2px; }
+.ans-input { font: inherit; font-family: var(--font-mono); width: 100%; max-width: 420px; padding: 8px 10px; border: 1px solid var(--rule); border-radius: 6px; background: var(--paper); color: var(--ink); }
+.ans-input.right { border-color: var(--ok); background: var(--ok-soft); }
+.ans-input.wrong { border-color: var(--bad); background: var(--bad-soft); }
+.feedback { font-size: .925rem; padding: 8px 10px; border-radius: 6px; }
+.feedback.right { background: var(--ok-soft); color: var(--ok); }
+.feedback.wrong { background: var(--bad-soft); color: var(--bad); }
+.feedback .full { color: var(--ink); display: block; margin-top: 4px; }
+mark { background: var(--omr-soft); color: var(--omr); font-weight: 700; padding: 0 2px; border-radius: 3px; }
+
+.timerbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--paper); padding-block: 8px; border-bottom: 1px solid var(--rule); display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--paper); }
+.clock { font-family: var(--font-mono); font-size: 1.3rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.clock.low { color: var(--bad); }
+.progress { height: 4px; background: var(--rule); border-radius: 2px; overflow: hidden; }
+.progress > i { display: block; height: 100%; background: var(--omr); }
+
+.score { display: flex; gap: 16px; align-items: baseline; flex-wrap: wrap; }
+.score .big { font-family: var(--font-mono); font-size: 3rem; font-weight: 600; color: var(--omr); font-variant-numeric: tabular-nums; line-height: 1; }
+.breakdown { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.breakdown div { border: 1px solid var(--rule); border-radius: 6px; padding: 8px; text-align: center; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+/* study list */
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.tab { border: 1px solid var(--rule); background: var(--sheet); border-radius: 999px; padding: 4px 14px; }
+.tab.on { background: var(--omr); border-color: var(--omr); color: var(--sheet); }
+.list { display: flex; flex-direction: column; }
+.li { display: grid; grid-template-columns: minmax(110px, 38%) 1fr; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--rule); min-width: 0; }
+.li b { overflow-wrap: anywhere; }
+.li.block { display: flex; flex-direction: column; gap: 2px; }
+.search { font: inherit; width: 100%; padding: 8px 12px; border: 1px solid var(--rule); border-radius: 6px; background: var(--sheet); color: var(--ink); }
+.kbd { font-family: var(--font-mono); font-size: .75rem; border: 1px solid var(--rule); border-radius: 4px; padding: 0 5px; }
+@media (max-width: 480px) { .li { grid-template-columns: 1fr; gap: 0; } .score .big { font-size: 2.4rem; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap" id="app"></div>
+
+<script>
+/* ===================== 자료 (Task 1 단어장) ===================== */
+const T1RAW = `abort | 유산하다
+abruptly | [부] 갑자기
+absurd | 불합리한
+academia | [명] 학계
+accord | 일치하다
+account for | (부분·비율을) 차지하다
+accumulate | 축적하다
+accurate | [형] 정확한
+acknowledge | [동] 인정하다, 감사를 표하다
+acquaint | 익히다, 숙지하다
+acquisition | 획득
+adjust | [동] 조절하다, 적응하다
+administer | [동] 관리하다, 집행하다
+adulation | [명] 찬사, 과찬
+adverse | 부정적인, 불리한
+aesthetic | 미적인
+affiliate | 제휴하다, 가입하다
+affordable | [형] 감당할 수 있는, 알맞은
+after a fashion | 어느 정도, 대강
+agility | [명] 민첩성, 민첩함
+allocate | 할당하다
+allot | [동] 할당하다
+amigo | [명] 친구
+amplification | [명] 확대, 확장
+amplify | 확대하다
+anxiousness | [명] 걱정스러움
+ape | [명] 유인원 [동] 흉내내다
+approximation | [명] 근사치, 비슷한 것
+aquanaut | [명] 해중 작업[탐사]원, 잠수 기술자
+archive | 기록보관소
+aristocratic | [형] 귀족적인
+artistry | [명] 예술성
+artwork | [명] 삽화, 미술품
+ascendance | [명] 우세, 지배권
+assassinate | [동] 암살하다
+assault | 습격
+assumption | [명] 추정, 상정
+asteroid | [명] 소행성
+astronaut | [명] 우주 비행사
+atmosphere | [명] 대기, 분위기
+atom | [명] 원자
+attorney | 변호사
+audible | [형] 들을 수 있는
+authentic | [형] 진정한, 진짜의
+authority | [명] 권위, 권한, 권위자
+autograph | [명] 사인 [동] 사인을 해주다
+autonomous | [형] 자율적인, 자주적인
+bankrupt | 파산한, 파산자
+bay | [명] 궁지에 몰린 상태, 작은 만
+be taken hostage | 인질로 잡히다
+beast | [명] 짐승, 야수
+beckon | [동] 손짓으로 오라고 부르다
+benefit | [명] 혜택 [동] 도움이 되다, 득을 보다
+berate | [동] 질책하다
+bishop | 주교
+blade | [명] 잎, 날
+blank | [명] 빈칸 [형] 빈
+blast | 돌풍
+blink | [동] 깜빡거리다 [명] 깜빡거림
+blow up | 폭파하다, 터뜨리다
+blunder | [동] 실수하다 (~ on 더듬더듬하다) [명] 실수
+blush | [동] 얼굴을 붉히다
+border | [명] 경계, 국경 [동] 인접하다
+bough | [명] (나무의 큰) 가지
+breakup | [명] 붕괴, 해산
+breed | 낳다, 기르다
+brew | 양조하다
+briefcase | [명] 서류가방
+brilliant | [형] 빛나는, 훌륭한
+broiler | [명] 육계(고기용으로 키우는 닭)
+bruised | [형] 상처입은
+brute | 야수, 짐승같은
+bulk | (큰) 규모, 양; 대부분
+calamity | [명] 재앙
+calm | [형] 차분한 [동] 진정시키다, 침착해지다
+cannery | [명] 통조림 공장
+caption | 설명, 표제
+carnivore | [명] 육식동물
+cast | [명] (영화, 연극 등의) 출연자
+catastrophe | [명] 참사, 재앙
+cater | 음식을 공급하다; ~에 맞추다
+cathedral | 대성당
+cause | [명] 이유
+chamber | 방
+chemical | [형] 화학의 [명] 화학 물질
+chronic | 만성의
+chuckle | [명] 빙그레[싱긋] 웃다
+civilization | [명] 문명, 문명사회
+cluster | [명] 무리
+coastal | [형] 해안의
+coerce | [동] 강압하다, 강제하다
+coincidence | [명] (우연의) 일치
+collaborate | [동] 협력하다
+coma | [명] 혼수상태
+combat | [명] 전투 [동] 싸우다
+combine | [동] 결합하다, 병행하다
+come up with | ~을 생각해내다, ~을 제시하다
+comfortable | [형] 편안한
+commence | 시작하다
+commit | [동] 적다; 저지르다, 약속하다, 헌신하다
+commodity | 상품
+compatible | [형] 공존할 수 있는, 호환이 되는, 양립할 수 있는
+compel | [동] 강요하다
+compensate | 배상하다
+compile | 편찬하다
+complicated | [형] 복잡한
+compliment | [동] 칭찬하다 [명] 칭찬
+component | 구성하는 성분
+composer | [명] 작곡가
+compound | 섞다, 혼합하다
+comprise | 구성되다
+compromise | 타협; 타협하다
+compulsory | 의무적인
+conceive | 상상하다
+concept | [명] 개념
+condemn | 나무라다
+conductive | [형] 전도성의
+confer | 주다
+confinement | [명] 갇힘
+confirm | [동] 확인하다
+connect | [동] 연결하다, 관련시키다
+consensus | (의견 등의) 일치
+consent | 승낙하다
+conservation | [명] 보존, 보호
+conserve | 보존하다
+considerate | 사려깊은
+constant | [형] 끊임없는, 변치않는
+constitute | 구성하다
+constrain | 강제하다
+construct | [동] 건설하다, 구성하다
+consume | [동] 소비하다, 소모하다; (강렬한 감정이) 사로잡다[휩싸다]
+consumption | [명] 소모, 소비, 소비량
+contemporary | 현대의
+contend | [동] 싸우다, 승리를 위해 경쟁하다
+continuity | [명] 지속, 연속
+contradict | 반박하다
+controversial | [형] 논쟁의
+convention | 관례
+convert | [동] 전환시키다, 개조하다
+coordinate | [동] 조직하다, 조정하다
+coordination | [명] 조직(화), 조화, 합동
+corridor | [명] 복도, 통로
+counterpart | [명] 상대, 대응관계에 있는 것
+county | 자치주[군]
+cower | [동] 움츠러들다
+creature | [명] 생물, 생명체
+creek | 시내
+creep | 기다
+crinkle | [동] 잔주름이 잡히다, 찡긋하다
+criteria | criterion(기준)의 복수형
+cross | [동] (위에) 줄을 긋다
+crossed eye | 사시 (눈을 모로 뜨거나 곁눈질로 봄)
+crotch | [명] 갈라진 부분, 가랑이
+crouch | [동] 쭈그리고 앉다
+curiosity | [명] 호기심
+currency | 통화, 통용
+curriculum | 교육과정
+curse | 저주
+custody | 보호
+cylinder | [명] 원통, 원통형 용기
+cynical | [형] 냉소적인, 비관적인
+dawn | [명] 새벽, 시작
+deal with | ~을 상대하다, ~을 해결하다
+decent | 점잖은
+decipher | [동] 판독하다, 해독하다
+decorative | [형] 장식의, 장식용의
+dedicate | 바치다, 헌정하다
+deficiency | 결핍
+deficit | 적자, 결손
+degrade | 비하하다, 분해되다
+delegate | 위임하다; 대표
+deliberate | [형] 고의의, 신중한
+delight | [명] 기쁨 [동] 기쁘게 하다
+demanding | [형] 많은 것을 요구하는, 욕심이 많은
+dense | [형] 밀집한, (앞이 안 보이게) 짙은
+depict | 묘사하다
+deposit | 보증금; 두다
+deprive | 빼앗다
+designate | 지정하다
+desperate | [형] 절망적인, 필사적인
+detect | [동] 찾아내다, 감지하다
+devoted | [형] 헌신적인
+diabetes | 당뇨병
+diameter | [명] 지름, 직경
+dictate | 받아쓰게 하다; 명령하다
+dig | [동] (땅을)파다
+dignity | 위엄
+dimension | 크기, 치수, 규모
+dine | 저녁식사를 하다
+discharge | 떠나는 것을 허락하다; 해고하다
+discourse | 담론, 담화
+discovery | [명] 발견, 발굴
+discriminate | 구별하다, 차별하다
+dismissive | [형] 무시하는, 멸시하는
+displace | 대신[대체]하다
+dispute | 분쟁, 반박하다
+disrupt | [동] 지장을 주다, 방해하다
+distort | 비틀다, 왜곡하다
+distract | [동] 산만하게 하다
+distraction | [명] 집중을 방해하는 것
+distribution | [명] 분배, 분포
+divine | 신의
+dock | [명] 부두 [동] 배를 부두에 대다
+doctorate | [명] 박사학위
+dodge | [명] (피하기 위한) 책략, 술수 [동] 재빨리 움직이다, 회피하다
+dogmatic | [형] 독단적인
+domesticate | [동] 길들이다, 사육하다
+dominance | [명] 우월, 지배
+dominant | 우세한
+dose | 1회 복용량; 투약하다
+dot | [동] (글자 위나 옆에) 점을 찍다
+draft | 원고, 초안
+drain | 배수하다
+dramatic | [형] 급격한, 감격적인
+dread | 두려워하다, 두려움
+drive | [동] 운전하다, (어떤 방향으로) 몰다
+dual | 둘의
+duly | [부] 예상대로, 적절한 절차에 따라, 적절한 때에
+ecstatic | [형] 황홀한
+edible | [형] 먹을 수 있는
+efficacy | [명] 효능
+efficiency | [명] 효율, 효율성
+ego | [명] 자아, 자존심
+elaborate | 공들인
+embargo | [명] 금수조치, 통상 금지령, 출항 금지
+embrace | 포옹하다
+eminent | [형] 저명한, 탁월한
+emit | [동] ~을 내뿜다
+emphasis | [명] 강조, 역점
+encounter | [동] (우연히) 마주치다, (위험에) 부닥치다 [명] (뜻밖의) 만남
+enforce | 실시하다
+engineer | [동] 설계하다, 계획하다 [명] 기술자
+enroll | 명부에 올리다
+entitle | 자격을 주다
+equate | 동일시하다
+equation | [명] 방정식
+erect | 똑바로 선
+essence | [명] 본질
+estate | 사유지, 토지
+ethical | 윤리적인, 도덕상의
+ethnic | [형] 민족의
+evacuate | 비우다
+evolve | [동] 진화하다, 발전시키다
+exclusive | [형] 독점적인, 전용의; 배타적인 [명] 독점 기사
+executive | 집행의
+expenditure | [명] 지출, 소비
+experiment | [명] 실험 [동] 실험하다
+expert | [명] 전문가 [형] 전문가의
+expertise | 전문 지식[기술]
+explicit | 명백한
+exploration | [명] 탐험, 탐구
+extend | [동] 연장하다
+external | [형] 외부의
+extinct | [형] 멸종된, 사라진
+extinction | [명] 멸종
+extract | 뽑아내다
+extraordinary | [형] 비범한, 기이한
+extraterrestrial | [명] 외계인 [형] 외계의
+extremely | [부] 극도로
+facilitate | 쉽게 하다
+faculty | 능력
+fascinate | [동] 마음을 사로잡다, 매혹하다
+fascinating | [형] 대단히 흥미로운
+fasten | [동] 매다, 고정시키다
+fatal | 치명적인
+federal | 연방의
+fertile | 비옥한
+fertilizer | [명] 비료
+feudal | [형] 봉건적인
+field | [동] 선수들을 경기 등에 배치하다
+filling station | [명] 주유소 (=gas station)
+fin | [명] 지느러미
+fine point | 날카로운 뾰족한 끝부분
+flee | 달아나다
+fleet | [명] 선대, 선단, 함대
+flexible | [형] 유연한, 융통성 있는, 잘 구부러지는
+flip | 튀기다, 홱 움직이다, 튀기기
+fluid | 유체, 유동적인
+flush | 상기되다, (물이) 쏟아지다
+fond | 좋아하는
+for everyone | 모두를 대신[대표]하여 (on behalf of everyone)
+formula | 공식
+fossil | [명] 화석
+foster | 기르다
+fraction | 분수
+fragment | [동] 산산이 부서지다
+frantically | [부] 미친 듯이
+frightening | [형] 겁을 주는, 무서운
+from side to side | 좌우로
+frost | 서리
+fulsome | [형] 가득한, 후한; 지나친
+furious | 노하여 펄펄뛰는
+furnish | 공급하다
+fuse | 퓨즈, 도화선, 신관
+gasoline | 가솔린
+gaze | 지켜보다
+gene | [명] 유전자
+general staff | 일반참모, 참모본부
+generate | [동] 만들어내다, 발생시키다
+generation | [명] 세대
+genuine | [형] 진짜의, 진실된
+give you a run for your money | 1. 돈을 치른[노력한] 만큼의 만족을 얻다 2. 치열한 경쟁을 하다, 접전을 하다
+glance | [동] 흘끗 보다 [명] 흘끗 봄
+glancing blow | 비스듬한[스치는] 가격
+glare | [동] 노려보다, 반짝반짝 빛나다 [명] 노려봄, 눈부신 빛
+glimpse | 흘끗 봄
+grasp | 붙잡다
+gross | 총계의
+guardian | 보호자
+gulf | 만
+habitat | 서식지
+halt | 멈춰서다
+halve | [동] 반으로 줄다, 이등분하다
+hands-off | [형] 불간섭주의의
+hands-on | [형] 직접 해 보는, 실천하는, 실무에 적극적으로 관여하는
+haunt | 귀신이 나타나다, 뇌리에서 떠나지 않다; 자주 가는 곳
+headquarters | 본부
+heavenly | [형] 천국의, 하늘의
+hedge | [동] 위험에 대비하다
+heir | 상속인
+hence | 그러므로
+herbivore | [명] 초식동물
+heritage | 유산
+high-tech | [형] 첨단기술의
+hominid | [명] 인류, 인류의 조상(진화 인류의 모체가 된 사람이나 동물)
+hook | 갈고리
+horn | 뿔
+hostage | 인질, 볼모
+hostile | 적대적인, 반대하는
+household name | 누구나 아는 이름, 유명한 사람 또는 물건
+hull | [명] 선체
+humidity | [명] 습도, 습기
+humpbacked | [형] 등이 굽은
+hushed | 조용한
+hypothesis | 가설
+identical | [형] 똑같은, 일치하는
+ideology | 관념, 이념
+illusion | 환영
+imagination | [명] 상상, 상상력
+immense | 엄청난, 어마어마한
+immigrant | [명] 이민자
+immigrate | 이주해오다
+impair | [동] 손상시키다
+implement | 시행하다, 도구
+imply | 암시하다
+impose | 부과하다
+impressive | [형] 인상적인, 감명깊은
+in one's element | 자기 뜻대로 할 수 있는 처지에 있는 [물고기가 물속에 있듯이]
+in passing | 지나는 길에, ~하는 김에
+incline | 기울이다
+incorporate | 포함하다, 설립하다
+index | 색인
+indifferent | [형] 무관심한
+induce | [동] 유발하다, 설득하여 ~시키다
+industrious | [형] 부지런한
+inevitable | 피할 수 없는
+infect | [동] 감염시키다
+infer | 추론하다
+inflate | 부풀게 하다
+inherent | 내재하는
+inhibit | 억제하다, 못하게 하다
+innovative | [형] 혁신적인, 획기적인
+inquire | 묻다
+integrate | 통합하다
+integrity | [명] 완전함, 진실
+internal | [형] 내부의, 체내의
+intervene | 개입하다, 끼어들다
+intricate | [형] 복잡한, 난해한
+intrigue | 강한 흥미를 불러일으키다, 모의, 음모
+investigate | [동] 조사하다, 연구하다
+involved | [형] 뒤얽힌, 말려든
+IPO | 기업공개(initial public offering), 주식상장
+irregular | [형] 불규칙한
+irrigation | [명] 관개, 물을 끌어들임
+irritate | [동] 짜증나게 하다, 자극하다
+jangle | [동] 쨍그렁[땡그랑]거리다; (신경이) 곤두서다
+joint | [명] 관절 [형] 공동의
+judicial | 사법의
+keen | 열망하는; 날카로운
+knot | 매듭(=tie)
+landlord | [명] 주인, 임대주
+lean | [동] (몸을) 숙이다, 기울이다, 굽히다
+leap | [동] 뛰어넘다 [명] 도약
+lease | 임대차 계약; 임대하다
+legislate | 법률을 제정하다
+legitimate | 합법의
+level | [형] 같은, 대등한
+lift | [동] (제재를) 풀다[해제/폐지하다], 들어 올리다
+limb | [명] 나뭇가지, 팔다리
+literal | 문자의
+locate | [동] 찾아내다
+lone | 혼자의
+look into | ~를 조사하다, ~의 속을 들여다보다
+lore | [명] 구전 지식, 설화
+lump | 덩어리
+magnificent | 장대한
+maintain | [동] 유지하다, 지속하다
+make ends meet | 겨우 먹고 살 만큼 벌다, 수입과 지출의 균형을 맞추다
+malformed | [형] 기형의
+manifest | 나타내다; 분명한
+manipulate | 조종하다, 다루다
+mark | [명] 표시, 자국 [동] 표시하다, 흔적을 내다
+mass | [명] 질량
+massive | [형] 거대한
+mature | [형] 성숙한 [동] 성숙하다
+meanwhile | 그동안에
+medieval | 중세(풍)의
+medium | [명] 매체 [형] 중간의
+mere | 단순한
+merge | 합병하다
+metabolic | [형] 신진대사의
+metropolitan | 대도시, 수도권의
+microbiologist | [명] 미생물학자
+migrate | 이주하다
+mimic | [동] 모방하다
+minister | [명] 장관, 성직자
+miracle | [명] 기적
+misshapen | [형] 모양이 정상이 아닌, 기형의
+mock | 조롱하다
+moderate | 보통의, 적당한
+modest | [형] 겸손한, 미천한
+modify | 변경하다
+molecule | [명] 분자
+monarch | [명] 군주
+monument | 기념비
+mortal | 죽을 운명의
+motivate | [동] 동기를 부여하다
+mummified | [형] 미라화된
+mustache | [명] 콧수염
+mutual | 상호의
+naive | 순진한
+nanny | 유모
+nasty | 끔찍한, 못된
+nationalization | [명] 국유화
+necessary | [형] 필수의, 필요한
+need | [명] 필요, 요구
+negotiate | [동] 협상하다
+nobility | [명] 고귀함; 귀족
+nomadic | [형] 유목의
+nominate | 추천하다
+nonetheless | 그렇기는 하지만, 그렇더라도
+norm | 표준
+noteworthy | [형] 주목할만한
+notion | 관념
+numerous | 다수의, 많은
+nun | 수녀
+objective | [형] 객관적인 [명] 목표
+oblige | 의무적으로[부득이] …하게 하다
+obsess | (어떤 생각이 사람의 마음을) 사로잡다, … 생각만 하게[…에 집착하게] 하다
+obsession | [명] 강박, 집착
+officer | [명] 장교, 경찰관
+oil field | 유전, 석유 생산 지역
+oppressive | [형] 억압하는, 답답한
+orbit | [명] 궤도 [동] 궤도를 그리며 돌다
+orchestrate | [동] (복잡한 계획·행사를 세심히 또는 은밀히) 조직하다; 관현악용으로 편곡하다
+organism | [명] 생물
+origin | [명] 기원, 출신
+original | [형] 원래의, 독창적인
+ounce | 온스, 아주 적은 양
+out of the blue | 갑자기, 난데없이
+outrage | 격노, 잔학 행위
+oversee | [동] 감독하다
+overwhelm | 압도하다
+overwhelmingly | [부] 압도적으로
+paddle | [명] 물갈퀴 형태의 발
+paleoanthropologist | [명] 고인류학자
+paleontologist | [명] 고생물학자
+panel | 판벽널
+parallel | 평행의
+parliament | 의회
+particle | 입자
+pat | 쓰다듬다[토닥거리다]
+patch | (특히 주변과는 다른 조그만) 부분, (구멍 난 데를 때우거나 장식용으로 덧대는 데 쓰이는) 조각
+patent | 특허권[증]
+patrol | 순찰을 돌다
+pave | 포장하다
+peak | [동] 최고조에 달하다
+peasant | [명] 소작농
+pen | [동] 쓰다
+penetrate | [동] 관통하다, 꿰뚫다
+per capita | 1인당
+persist | 집요하게[고집스럽게/끈질기게] 계속하다
+perspective | 관점, 시각
+pervasive | [형] 만연하는
+phase | 단계, 국면
+pier | [명] 부두
+pinch | 꼬집다
+pioneer | [명] 개척자 [동] 개척하다
+pit | [명] 구멍, 구덩이
+pitch | 던지다
+plantation | [명] 대규모 농장
+play out | [동] 전개되다
+poke | [동] 쿡 찌르다, 쑤시다
+polish | 닦다, 갈다, 윤내다
+pope | 로마 교황, 최고 권위자로 자처하는 사람
+popularize | [동] 많은 사람들에게 알리다, 대중화하다
+portion | 일부, 부분
+possibility | [명] 가능성, 기회
+preach | 설교하다
+precede | ~에 앞서다
+predator | [명] 약탈자, 포식 동물
+predatory | [형] 동물을 잡아먹는, 약탈하는
+prejudice | 편견, 선입관
+premier | 최고의, 제1의
+premium | 할증금, 액면 초과액, 프리미엄
+preserve | [동] 보존하다, 보호하다
+presume | 추정하다, 간주하다
+prevail | 만연하다, 이기다
+primitive | [형] 원시의
+prior | 이전의, 앞의
+privilege | [동] 특권을 주다
+procedure | 절차, 방법
+proceeds | [명] 수익금
+proctor | (시험 등의) 감독관
+profile | 옆 얼굴, 반면상, 인물 소개, 태도, 자세
+profound | 깊은, 심오한
+prohibit | 금하다, 금지하다
+prominent | 두드러진, 현저한, 중요한
+prompt | [동] 촉발하다, 자극하다 [형] 신속한, 즉각적인
+pronunciation | [명] 발음
+propel | [동] 추진하다, 나아가게 하다
+property | [명] 특성
+proportion | 비율, 비, 균형, 조화
+prosper | 번영하다
+proton | [명] 양성자
+protrude | [동] 돌출되다, 튀어나오다
+proverb | [명] 속담
+provoke | 유발하다, 화나게 하다
+quadruple | [동] 네 배가 되다, 네 배로 만들다 [형] 네 배의, 네 부분[네 명/네 그룹]으로 이뤄진
+questionnaire | [명] 질문지, 설문지
+quote | 인용하다
+rage | 격노
+rally | 결집하다
+rational | 합리적인, 이성적인
+reaction | [명] 반응, 반작용
+rear | 뒤
+rebel | 반역자
+recession | [명] 불경기, 불황, 후퇴 (cf. recess 휴회, 휴식)
+recognition | [명] 알아보는 것, 인정함
+recompense | [명] 보상, 배상
+recover | [동] 회수하다
+recruit | 모집하다; 신병, 신입사원
+redeem | [동] 보완하다, 만회하다
+refine | 정제, 개선하다
+refrigerator | [명] 냉장고
+refute | [동] 반박하다
+regular | [형] 정기적인, 보통의
+regulate | 규제하다, 조절하다
+reinforce | 강화하다, 보강하다
+relevant | 관련 있는, 적절한
+reluctant | 마음이 내키지 않는
+remote | [형] 멀리 떨어진, 원격 조정의
+replace | [동] 대체하다, 교체하다
+replica | [명] 복제품
+represent | [동] 대표하다, 나타내다
+repulse | [동] 혐오감을 주다, 구역질나게 하다, 물리치다
+reputation | 평판
+resemble | [동] ~와 닮다
+reside | 거주하다
+residual | [형] 남은, 잔여의
+resign | 사임하다
+resist | [동] 저항하다, 견디다
+resource | [명] 자원, 재료
+resourceful | [형] 지략 있는, 수완 있는
+respective | 각각의
+respectively | [부] 각각
+responsibility | [명] 책임
+responsible | [형] 책임 있는
+rest | [동] 얹혀있다, 기대다
+restrain | 제지하다
+restrict | 제한하다
+resume | 다시 시작하다
+retail | 소매
+retain | 보유하다
+retina | [명] (눈의) 망막
+retreat | [동] 후퇴하다 [명] 후퇴, 철수
+revealing | [형] 의미심장한, 흥미로운 사실을 보여주는
+revenge | 복수
+revenue | [명] 수익, 수입
+reverse | 뒤바꾸다; 반대의
+rice paddy | 논
+riches | [명] 부, 재물
+rid | 없애다, 면하게 하다
+ridiculous | 말도 안되는, 터무니 없는, 웃기는
+riot | 폭동, 소요, 소동
+risk-taking | [명] 위험 감수
+roam | [동] 배회하다, 돌아다니다
+roar | 으르렁거리다; 으르렁거림, 포효
+rod | 막대
+rot | 썩다
+runner-up | [명] 2위 입상자, 차점자
+sack | [동] 파면[해고]하다 [명] 자루
+sacrifice | [동] 희생하다 [명] 희생
+salon | 객실
+sapling | [명] 묘목, 어린 나무
+scarce | 부족한
+scarcity | [명] 부족, 결핍
+scatter | 뿔뿔이 흩어 버리다
+scent | [명] 향기, 냄새 [동] 냄새를 풍기다
+scoff | [동] 비웃다, 조롱하다
+scope | 범위
+screw | 나사
+scrub | 문질러 씻다, (관목의) 숲
+sculpture | 조각, 조각하다
+seam | [명] 솔기, 층, 이음매, 접합선
+seize | 붙잡다
+sensitive | [형] 민감한, 예민한
+sentiment | 정서
+sequence | 연속
+sheer | [형] 절대적인
+shelter | 주거지, 피난처
+shield | 방패
+shift | [동] 옮기다 [명] 변화
+shimmy | [명] 진동
+shortage | [명] 부족, 결핍
+shrink | 줄어들다
+shrug | [동] 어깨를 으쓱하다 [명] 어깨를 으쓱하기
+siesta | (특히 더운 나라들에서 점심시간 무렵의) 낮잠[휴식]
+significant | [형] 상당한, 중요한
+simulate | …한 체[척]하다, 가장하다
+simultaneous | 동시에 일어나는
+simultaneously | [부] 동시에
+sink | [동] 가라앉다
+sip | [동] 조금씩 마시다 [명] 한 모금
+skeleton | [명] 해골, 윤곽
+skeptical | [형] 회의적인
+slaughter | 도살
+sleep late | 아침에 평소보다 늦게까지 자다, 밤에 늦게 자다
+slide | [동] 미끄러지다 (slide - slid - slid)
+slight | 약간의
+slope | 비탈
+sneak | 몰래 가다
+sniff | 코를 킁킁거리다
+sole | 유일한; 발바닥
+sophisticated | [형] 세련된, 정교한
+sort of | 어느 정도[다소], 뭐랄까(=sorta)
+sort out | 가려내다, 분류하다
+span | 기간; 걸치다
+spear | [명] 창 [동] 창으로 찌르다
+spectacle | 광경
+spectrum | 스펙트럼
+sphere | 구
+spill | 엎지르다
+spit | 침을 뱉다
+spite | 악의
+splash | 튀기다
+split | 쪼개다
+spouse | 배우자
+spread | [동] 펼치다, 퍼뜨리다, 바르다
+stack | 무더기, 쌓다
+stake | [명] 막대기, 말뚝, 이해관계
+stalk | [동] 살그머니 접근하다 [명] (식물의) 줄기
+stare | [동] 응시하다
+starfish | [명] 불가사리
+starve | 굶어 죽다
+statistic | 통계의, 통계량
+stature | [명] 신장, 키, 위상
+steep | 가파른; ~에 담그다, 잠기다
+stick up | 위로 서있다, 불쑥 튀어나오다
+stiff | 굳은
+stimulate | [동] 자극하다, 격려하다
+stir | 휘젓다
+stitch | 바늘땀, 바느질하다
+strain | 부담, 혹사하다, 안간힘을 쓰다
+striking | [형] 두드러진, 눈에 띄는
+strip | 벗기다
+stroke | 치기, 때리기; 쓰다듬다
+stumble across | ~을 우연히 발견하다
+stump | [명] (나무의) 그루터기, (나무 등의) 부러지거나 베고 남은 아랫부분
+subconscious | [명] 잠재의식
+subjective | 주관적인
+submit | 제출하다; 굴복시키다
+subscribe | 구독하다, 가입하다
+substance | 물질
+substantial | 실체의
+substantive | [형] 본질적인, 실질적인
+substitute | 대용하다, 대신하다; 대리(인)
+subtle | 미묘한
+suck | 빨다
+suffer | [동] 고통 받다, 겪다
+suite | 일행, 수행원; 묶음
+superlative | [명] 최고의 찬사 [형] 최상급의
+supervise | 감독하다
+supplement | 부록
+surrender | 넘겨주다
+survival | [명] 생존
+suspend | 매달다, 유예하다, 중단하다
+sustain | 지속시키다
+swear | 맹세하다
+sweep | 청소하다
+swell | 부풀다
+swift | 빠른
+swiftness | [명] 재빠름
+symmetrical | [형] 대칭적인
+take an examination | 시험을 치르다
+take ownership of | 어떤 일의 실행과 결과에 대해 책임을 지다
+tap | [동] 톡톡 치다
+task force | 대책 위원회
+tease | 놀리다, 장난하다, 괴롭히다
+tedious | [형] 지루한, 장황한
+telecast | [명] 텔레비전 방송
+telegraph | 전신
+temporary | 일시적인
+tempt | 유혹하다, 유도하다
+tenant | [명] 세입자
+tense | [형] 긴장한
+tenure | [명] 재임기간, 종신재직권
+term | [명] 용어; 기간
+terminate | 끝내다
+terrifying | [형] 겁나게 하는, 놀라게 하는
+testify | 증언하다, 증명하다
+texture | [명] 감촉, 구성, 조화[어우러짐]
+therapy | 치료법
+thickly | 두텁게 (thick 두터운)
+thoroughly | [부] 대단히, 철저히
+thread | 실
+thrill | [동] 오싹하다 [명] 오싹함, 떨림
+tick | 시계소리
+timber | 재목
+torment | [동] 고통을 안겨주다, 괴롭히다
+torture | 고문
+track | [동] 추적하다 [명] 길, 자취
+track down | 추적하다
+trail | [명] 흔적, 오솔길 [동] 끌다, 추적하다
+trait | [명] 특징, 특성
+transact | 거래하다
+transition | 변화, 전환, 과도기
+translation | [명] 번역, 해석
+transmit | 전송하다, 전염시키다
+treaty | 조약
+tremendous | 엄청난, 굉장한
+trigger | [동] 작동시키다, 촉발시키다 [명] 방아쇠, 계기
+trim | 다듬다, 손질하다
+trivial | [형] 사소한
+tuna | [명] 참치
+turn A into B | A를 B로 바꾸다
+turn in | ~을 제출하다, ~을 돌려주다[반납하다]
+turnover | [명] 회전율, 이직률, 전복
+twilight | [명] 황혼, 쇠퇴기
+underappreciated | [형] 덜 인정받는
+undergo | 겪다
+underlie | (…의) 기저를 이루다[기저가 되다]
+undermine | 기반을 약화시키다
+undertake | 착수하다
+unprecedented | [형] 전례없는
+useless | [형] 쓸모없는
+user-friendly | [형] 사용하기 쉬운
+utilize | ~을 이용하다
+utter | 말을 하다; 완전한
+vague | 희미한, 모호한
+valid | 유효한
+vanish | 자취를 감추다
+velocity | [명] 속도
+verbal | 말의, 말에 관한, 언어상의, 말로 나타낸, 말로 된
+verse | 운문, (시의) 연; (노래의) 절
+vertical | 수직의
+vessel | 선박[배], 그릇
+veteran | 노련가, 경험 많은 대가, 베테랑
+veterinarian | 수의사
+vice | 악덕, 비행, 타락 행위
+vice versa | 그 역[반대]도 마찬가지이다
+vigorous | 정력적인, 강건한, 활기 있는, 격렬한
+virgin | 처녀, 동정녀
+virtual | 사실상의, 실질상의, 허상의
+virtue | 덕, 덕행, 선, 선행
+vital | 생명의, 생명에 관한, 생명유지에 필요한
+vivid | 발랄한, 약동적인, 힘찬, 생기있는
+vocation | 천직, 소명 의식
+wagon | 짐마차
+wander | 헤매다
+warehouse | 창고
+warrant | 보증, 보증하다
+warrior | 전사
+weary | [형] 지친, 피곤하게 하는
+weave | 짜다
+weed | [명] 잡초 [동] 잡초를 뽑다
+weigh | [동] 무게가 ~이다, ~의 무게를 달다
+weird | [형] 이상한, 괴상한
+whereas | 반면에
+whip | 채찍, 채찍질하다
+wicked | 사악한
+widow | 미망인
+withdraw | 물러나다
+wreck | 망가뜨리다; 난파선, 잔해
+yield | (수익·결과·농작물 등을) 내다[산출/생산하다]; 굴복하다
+zealous | [형] 열성적인`;
+
+/* ===================== 자료 (Task 2 교과서 예문) — [[ ]] = 빈칸 단어 ===================== */
+const T2RAW = `5-1 | The desire for [[knowledge]] about our world has pushed explorers deep into oceans, caves, and even outer space. | 우리 세계에 대한 지식의 욕구는 탐험가들을 바다 깊은 곳, 동굴, 그리고 심지어 우주 공간으로까지 이끌었습니다.
+5-1 | Any explorer will tell you that the more they [[investigate]], the more they realize there's still so much to learn. | 어떤 탐험가든 탐구를 더 많이 할수록 아직 배워야 할 점이 훨씬 더 많다는 것을 깨닫게 된다고 당신에게 말할 것입니다.
+5-1 | Sylvia Earle, a deep-ocean [[pioneer]] with a long list of achievements, has engaged in 7,000 hours of underwater study during her career. | 수많은 업적을 남긴 심해 탐사의 선구자 실비아 얼은 자신의 커리어 동안 7,000시간에 달하는 수중 연구에 참여했습니다.
+5-1 | In 1970, she and a team of women "aquanauts" lived in an underwater habitat for weeks at a time to [[research]] marine life. | 1970년, 그녀와 여성 '아쿠아노트(수중 탐험가)' 팀은 해양 생물을 연구하기 위해 한 번에 몇 주씩 수중 서식지에서 생활했습니다.
+5-1 | Sylvia's work has been [[driven]] by the fact that we know so little about the ocean. | 실비아의 연구는 우리가 해양에 대해 아는 것이 거의 없다는 사실에 의해 추진되어 왔습니다.
+5-1 | In fact, scientists think they've only [[encountered]] about ten percent of the species that live in our oceans. | 사실 과학자들은 우리가 바다에 살고 있는 종의 약 10% 정도만 발견했을 뿐이라고 생각합니다.
+5-1 | Sylvia's [[purpose]] in life has been to protect the sea, and she has encouraged others to do the same. | 실비아의 삶의 목적은 바다를 보호하는 것이었으며, 그녀는 다른 사람들도 함께하기를 독려해 왔습니다.
+5-1 | Paleoanthropologist Lee Berger has been searching for ancient hominids in [[remote]] parts of Africa for over two decades. | 고인류학자 리 버거는 20년이 넘는 기간 동안 아프리카의 오지에서 고대 호미니드(인류의 조상)를 찾아왔습니다.
+5-1 | He is [[curious]] about the family of [[primates]] that evolved into Homo sapiens, or human beings. | 그는 호모 사피엔스, 즉 인간으로 진화한 영장류 과에 대해 호기심을 갖고 있습니다.
+5-1 | Lee has made some [[fascinating]] discoveries over time, but the most important was in 2014 during an expedition at the Rising Star cave system in South Africa. | 리가 시간이 지나며 몇 가지 매혹적인 발견을 해냈지만, 가장 중요한 발견은 2014년 남아프리카공화국의 라이징 스타 동굴계 탐사 중에 이루어졌습니다.
+5-1 | The bones were brought to the lab where [[experts]] put the skeletons together. | 그 뼈들은 연구실로 보내졌고, 그곳에서 전문가들이 뼈대를 조립했습니다.
+5-1 | Christine Wilkinson is a conservation biologist who [[looks into]] environmental and social problems. | 크리스틴 윌킨슨은 환경적 및 사회적 문제를 조사하는 보전생물학자입니다.
+5-1 | Working in Kenya, Christine uses [[innovative]] methods and [[high-tech]] devices to track and map the movement of animals, namely hyenas. | 케냐에서 활동하는 크리스틴은 혁신적인 방법과 첨단 장비를 사용하여 동물, 즉 하이에나의 이동을 추적하고 지도화합니다.
+5-2 | But humans can be [[motivated]] simply by the possibility of discovery. | 하지만 인간은 단지 발견의 가능성만으로도 동기 부여를 받을 수 있습니다.
+5-2 | So what is it exactly that caused us to [[spread]] out across the world 60,000 years ago, instead of just staying in Africa? | 그렇다면 6만 년 전, 우리가 단순히 아프리카에 머무는 대신 전 세계로 뻗어나가게 만든 정확한 원인은 무엇일까요?
+5-2 | For example, studies in Africa show that the gene is much more common in [[nomadic]] tribes than in tribes that prefer to stay in one place. | 예를 들어 아프리카에서 진행된 연구에 따르면, 그 유전자는 한곳에 머무르는 것을 선호하는 부족보다 유목 부족에게서 훨씬 더 흔하게 나타납니다.
+5-2 | But can a single [[gene]] be [[responsible]] for a trait as complex as the desire to explore? | 하지만 단 하나의 유전자가 탐험 욕구와 같이 복잡한 특성을 결정지을 수 있을까요?
+5-2 | Dr. James Noonan, a colleague of Dr. Kidd, explores how genes can affect the development of our bodies, especially our brains and our [[limbs]]. | 키드 박사의 동료인 제임스 누난 박사는 유전자가 우리 몸, 특히 뇌와 팔다리의 발달에 어떤 영향을 미치는지 연구합니다.
+6-1 | Many scientists believe that a major [[catastrophe]] — an asteroid strike — destroyed these [[enormous]] beasts. | 많은 과학자들은 소행성 충돌이라는 거대한 재앙이 이 거대한 짐승들을 멸망시켰다고 믿습니다.
+6-1 | Even though they're gone, their [[fossils]] can help us to understand what they were like. | 그들은 사라졌지만, 그들의 화석은 그들이 어떤 모습이었는지 이해하는 데 도움을 줄 수 있습니다.
+6-1 | Many people think that Tyrannosaurus rex, or T. rex, is the king of the ancient [[carnivores]]. | 많은 이들이 티라노사우루스 렉스(T. 렉스)를 고대 육식동물들의 왕이라고 생각합니다.
+6-1 | It's T. rex's size that made this [[predator]] so [[frightening]] — it was [[huge]]! | 이 포식자를 그토록 무섭게 만든 것은 바로 T. 렉스의 크기였습니다. 정말 거대했으니까요!
+6-1 | Its eyes were the size of grapefruits, its stomach was 1 m (3.3 ft.) in [[diameter]], and it used its massive [[jaws]] to chew up to 230 kg (500 lb.) of meat in a single bite! | 눈은 자몽 크기였고 위장의 지름은 1m에 달했으며, 거대한 턱을 사용해 한 번에 최대 230kg의 고기를 씹어 먹었습니다!
+6-1 | Patagotitan was 37 m (122 ft.) long and could [[weigh]] as much as 70 tons. | 파타고티탄은 길이가 37m에 달했고 무게는 무려 70톤에 이르렀습니다.
+6-1 | [[Eventually]], they developed into the birds of today. | 결국 그것들은 오늘날의 새로 진화했습니다.
+6-1 | Paleontologists remind us that most species eventually face [[extinction]], and humans may be no exception to that rule. | 고생물학자들은 대부분의 종이 결국 멸종에 직면하며, 인간도 그 법칙에서 예외가 아닐 수 있음을 상기시켜 줍니다.
+6-2 | Nizar Ibrahim has always been [[fascinated]] by dinosaurs. | 니자르 이브라힘은 항상 공룡에 매료되어 있었습니다.
+6-2 | Spinosaurus, which lived in North Africa about 97 million years ago, was an [[extraordinary]] creature. | 약 9,700만 년 전 북아프리카에 살았던 스피노사우루스는 비범한 생물이었습니다.
+6-2 | It had massive [[jaws]] like a crocodile, which were an [[advantage]] when catching [[prey]]. | 악어와 같은 거대한 턱을 가지고 있었는데, 이는 먹잇감을 잡을 때 유리했습니다.
+6-2 | What Nizar and his team learned was [[significant]]: Spinosaurus had dense bones and feet like paddles, which were characteristic of animals that spent a lot of time in the water. | 니자르와 그의 팀이 알아낸 사실은 중요한 의미를 가집니다. 스피노사우루스는 조밀한 뼈와 노 모양의 발을 가지고 있었는데, 이는 물속에서 많은 시간을 보내는 동물들의 특징이었습니다.
+6-2 | More amazing than the creature itself is how Nizar was able to find its [[skeleton]]. | 생물 그 자체보다 더 놀라운 것은 니자르가 어떻게 그 골격을 찾아낼 수 있었는가 하는 점입니다.
+6-2 | He only had a mental image of a man with a [[mustache]], which wasn't very helpful. | 그에게 있는 것이라곤 수염을 기른 남자에 대한 기억 속 잔상뿐이었고, 이는 그다지 도움이 되지 않았습니다.
+6-2 | He was sitting at an outdoor café, drinking tea with a colleague, talking about how it was [[useless]]: he would never piece together Spinosaurus. | 그는 야외 카페에 앉아 동료와 차를 마시며, 스피노사우루스의 뼈를 다시 맞추는 일은 소용없는 짓이라고 이야기하고 있었습니다.
+6-2 | The fossil hunter took Nizar to the site, and he was finally able to [[locate]] the remaining bones for his Spinosaurus skeleton. | 그 화석 사냥꾼은 니자르를 현장으로 데려갔고, 마침내 그는 스피노사우루스 골격을 완성할 남은 뼈들의 위치를 찾을 수 있었습니다.
+7-1 | It's all part of the Maker Movement, made up of [[resourceful]] people who make and fix things, rather than buy them. | 이 모든 것은 물건을 사기보다 직접 만들고 수리하는 재주 많은 사람들로 구성된 '메이커 운동'의 일부입니다.
+7-1 | Makers do all sorts of [[hands-on]] projects, from building pizza ovens to designing drones. | 메이커들은 피자 오븐 제작부터 드론 설계에 이르기까지 온갖 종류의 실습 프로젝트를 수행합니다.
+7-1 | For makers, the [[do-it-yourself]] approach is often more [[affordable]], sustainable, and satisfying than simply buying the solution to a problem. | 메이커들에게 직접 만들기 방식은 문제의 해결책을 단순히 구매하는 것보다 흔히 더 저렴하고, 지속 가능하며, 만족스럽습니다.
+7-1 | In places where [[affordable]] housing is a problem, 3D-printed homes are one possible solution. | 감당할 수 있는 가격의 주택 공급이 문제인 지역에서는 3D 프린팅 주택이 하나의 가능한 해결책이 될 수 있습니다.
+7-1 | Thanks to technology, it's easier than ever to turn a [[concept]] into reality. | 기술 덕분에 개념을 현실로 구현하는 것이 그 어느 때보다 쉬워졌습니다.
+7-1 | There are a lot of simple tools that can be controlled by [[user-friendly]] software, allowing just about anyone to create. | 사용자 친화적인 소프트웨어로 제어할 수 있는 간단한 도구가 많아 거의 누구든 무언가를 창작할 수 있습니다.
+7-1 | With a little creativity, you can use this simple hardware to [[engineer]] your own invention. | 약간의 창의력만 있다면 이 간단한 하드웨어를 사용하여 자신만의 발명품을 제작할 수 있습니다.
+7-1 | 3D printers are another key piece of technology for makers. They allow an average person to [[generate]] just about anything. | 3D 프린터는 메이커들에게 또 다른 핵심 기술입니다. 이는 일반인도 거의 모든 것을 만들어낼 수 있게 해줍니다.
+7-1 | Researchers are even [[experimenting]] with 3D-printed food. In ten years, we could have 3D printers next to our microwaves! | 연구원들은 심지어 3D 프린팅 음식까지 실험하고 있습니다. 10년 뒤에는 전자레인지 옆에 3D 프린터가 놓여 있을지도 모릅니다!
+7-1 | Makers must also [[take ownership of]] their learning. | 메이커들은 자신의 학습에 대해 책임을 가져야 합니다.
+7-1 | They need to be creative and try new things, and they must be willing to [[collaborate]] with, and learn from, others. | 그들은 창의적이어야 하고 새로운 것을 시도해야 하며, 기꺼이 타인과 협력하고 배워야 합니다.
+7-1 | Most importantly, they must be [[flexible]] and [[accept]] [[failure]] as part of the process. | 가장 중요한 것은 유연한 사고를 갖고 실패를 과정의 일부로 받아들여야 한다는 점입니다.
+8-1 | People have [[come up with]] many reasons to create [[artwork]] — some simple, and others more complex. | 사람들은 예술 작품을 창작하는 다양한 이유를 제시해 왔는데, 어떤 이유는 단순하고 어떤 이유는 더 복잡합니다.
+8-1 | Some art is simply decorative, while other more dramatic works seek to generate a [[reaction]] from the viewer. | 어떤 예술은 단순히 장식적인 반면, 더 극적인 작품들은 관람객의 반응을 이끌어내고자 합니다.
+8-1 | Art also allows an artist to leave a permanent [[mark]] on time. | 또한 예술은 화가가 시간에 영구적인 흔적을 남길 수 있게 해줍니다.
+8-1 | A painting or sculpture [[preserves]] a moment that has long passed. | 그림이나 조각은 오래전에 지나간 한 순간을 보존합니다.
+8-1 | The question of when art began is a [[controversial]] one. | 예술이 언제 시작되었는가 하는 문제는 논란의 여지가 많은 질문입니다.
+8-1 | Researchers have been working for decades to [[track down]] the answer. | 연구자들은 해답을 추적하기 위해 수십 년 동안 연구해 왔습니다.
+8-1 | [[Sophisticated]] paintings have been found in caves in Europe and Asia. | 유럽과 아시아의 동굴에서 정교한 벽화들이 발견되었습니다.
+8-1 | These early artists were using similar [[techniques]] and [[mediums]] to create their paintings. | 이 초기 예술가들은 그림을 그리기 위해 유사한 기법과 재료(매체)를 사용하고 있었습니다.
+8-1 | The fact that these two different groups [[produced]] such similar images suggests that creating art to communicate ideas is simply part of human nature. | 서로 다른 두 집단이 이토록 유사한 그림을 만들어냈다는 사실은, 생각을 전달하기 위해 예술을 창작하는 것이 인간 본성의 일부임을 시사합니다.
+8-1 | These impressive illustrations really [[drew him in]] and changed his [[perspective]] of early peoples. | 이 인상적인 그림들은 그의 관심을 사로잡았고, 초기 인류에 대한 그의 관점을 바꾸어 놓았습니다.
+8-1 | I had an assumption that people 40,000 years ago were [[primitive]], that they thought very differently than me. | 나는 4만 년 전의 사람들이 원시적이었으며 나와는 매우 다르게 생각했을 것이라는 선입견을 갖고 있었습니다.`;
+
+/* ===================== 자료 (Task 3 Quotes) — [[ ]] = 빈칸 표현 ===================== */
+const T3RAW = `I'm not a [[picky eater]]. | 난 가리는 거 없이 아무거나 잘 먹어요.
+I'm good. It's okay. [[Thank you for offering]] though. | 전 괜찮습니다. 말씀해주셔서 감사합니다. (상대방의 호의에 대한 부드러운 거절)
+[[How's everything going]] there? | 그쪽은 별일 없지요? 그쪽 일은 잘 진행되고 있지요?
+How's everything? I got you a little [[pick-me-up]]. | 잘 지내시죠? 기분 전환도 하실 겸 소소한 선물 하나 가져왔어요.
+I thought you [[could use]] a little pick-me-up. | 기분 전환도 하실 겸 필요하실 것 같아 챙겨왔어요.
+What are you [[working on]]? | 뭐 하세요? (뭔가를 열심히 하고 있는 상대에게)
+It's [[not for me]]. | 그건 그리 좋아하거나 즐겨하지 않습니다.
+It [[doesn't matter to me]]. | 전 상관 없으니 편한 대로 하세요.
+It [[slipped my mind]]. | (중요한 일 등을) 깜빡 잊어버렸네요.
+You wouldn't [[wait on]] me. | 당신은 저를 응대하려 하지 않으셨죠.
+You work [[on commission]]. | 당신은 판매 실적에 따라 급료를 받죠.
+Have you [[been served]]? | 주문 도와드릴까요? (주문하시고 응대 받으셨나요?)
+Are you [[being waited on]]? | (상점에서) 찾으시는 물건이 있으신가요? / (식당에서) 주문하셨나요?
+Yes, [[I'm being waited on]]. | 네, 이미 주문해서 응대 받고 있어요.
+You and the missus must have done something right, [[I'll give you that]]. | 당신하고 당신 부인이 뭐 하나는 제대로 잘했군. 그 점은 인정하지.
+I gotta [[give it to]] him. He is good. | 그는 정말 인정해 줘야겠군. 잘 하네.
+You really got to [[hand it to]] those federal marshals. | 그 연방 보안관들 정말 인정해야겠군.
+[[Not too shabby]]. | 나쁘지 않아. 꽤 괜찮아.
+[[Are we still on]]? | 우리 약속 아직 유효해? (이따 만나는 거 맞지?)
+We're [[on for tonight]]. | 오늘 밤 일정은 변동 없이 진행될 예정입니다. (=We are still scheduled for tonight.)
+[[I'm on it]]. | (내가 딱 붙어서) 바로 처리할게.
+You could be [[onto something]] there, doc. | 뭔가 제대로 짚은 것 같아요 (맞는 방향인 것 같아요), 선생님.
+I'm [[behind schedule]] about two hours. | 내 일정이 2시간 정도 늦어졌다. (on schedule 일정대로, ahead of schedule 일정보다 앞선)
+I'm [[behind you]] no matter what. | 무슨 일이 있어도 난 네 편이야.
+I [[got your back]]. | 난 네 편이야 (내가 지켜줄게).
+I'm [[for it]]. | 난 찬성해 (난 지지해).
+I'm [[all for it]]. | 그 의견 또는 제안에 대찬성이야.
+I'm [[up for it]]. | 나는 그 일에 직접 참여할 의향이 있어.
+Do you think [[I'm up for it]]? | 내가 그걸 해낼 수 있을까? (내가 그 일에 적합할까?, 자격이 될까?)
+I'm [[against it]]. | 나는 반대야.
+It's [[against the rules]]. | 규칙에 위배됩니다.
+You know I came [[against my better judgement]]. | 오지 않는 게 낫다는 걸 알면서도 결국 왔다는 걸 알잖아.
+Sorry [[doesn't cut it]]. | 미안하다는 말로 될 일이 아니야.
+You [[couldn't cut it]]. | 당신은 잘 못하셨네요.
+A phone call's [[not going to cut it]]. | 전화로는 안되겠네요.
+Standard is [[not going to cut it]]. | 보통 수준으로는 안되겠어요.
+I can [[do this all day]]. | 전 하루 종일도 할 수 있어요.
+There's [[only so many hours]] in a day. | 하루에 쓸 수 있는 시간도 한계가 있어 (하루는 24시간밖에 안되잖아).
+There's [[only so much]] a man can take. | 사람이 참는 데에도 한계가 있어 (더 이상은 못 견디겠어).
+There's only so much [[damage you can do]]. | 당신이 해를 입혀봤자 얼마나 입히겠어.
+My guess is you didn't [[come from money]], hence that chip on your shoulder. | 부잣집 출신이 아닌 게 불만인가 보군요.
+You [[have a chip on your shoulder]]. | 당신은 세상에 불만이 있는 분이군요.
+You need to [[take that chip off]] your shoulder. | 삐딱하게 구는 건 이제 그만해요.
+You grew up working class, and you [[have a chip on your shoulder]] about people who can send their kids to private schools. | 서민층으로 자라서 자식을 사립학교에 보낼 형편이 되는 사람들에게 반감을 가지고 있군요.`;
+
+/* ===================== 데이터 가공 ===================== */
+const T1 = T1RAW.split("\n").map(l => { const i = l.indexOf(" | "); return { w: l.slice(0, i).trim(), m: l.slice(i + 3).trim() }; });
+const cleanMeaning = m => m.replace(/\[(명|동|형|부)\]\s*/g, "").replace(/\s+/g, " ").trim();
+
+function splitMarked(s) { // returns [{t, ans:boolean}]
+  const out = []; const re = /\[\[(.+?)\]\]/g; let last = 0, m;
+  while ((m = re.exec(s))) { if (m.index > last) out.push({ t: s.slice(last, m.index) }); out.push({ t: m[1], ans: true }); last = re.lastIndex; }
+  if (last < s.length) out.push({ t: s.slice(last) });
+  return out;
+}
+function expand(raw, type, hasUnit) {
+  const qs = [];
+  raw.split("\n").forEach((line, si) => {
+    const parts = line.split(" | ");
+    const unit = hasUnit ? parts.shift().trim() : "";
+    const en = parts[0].trim(), ko = parts[1].trim();
+    const segs = splitMarked(en);
+    segs.forEach((seg, k) => {
+      if (!seg.ans) return;
+      const before = segs.slice(0, k).map(s => s.t).join("");
+      const after = segs.slice(k + 1).map(s => s.t).join("");
+      qs.push({ type, id: `t${type}:${si}:${k}`, unit, before, after, ans: seg.t, ko, full: en.replace(/\[\[|\]\]/g, "") , si });
+    });
+  });
+  return qs;
+}
+const T2Q = expand(T2RAW, 2, true);
+const T3Q = expand(T3RAW, 3, false);
+
+/* ===================== 유틸 ===================== */
+const $ = s => document.querySelector(s);
+const app = $("#app");
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const CIRC = ["①", "②", "③", "④", "⑤"];
+const norm = s => String(s || "").toLowerCase().replace(/[’‘`´]/g, "'").replace(/[“”]/g, '"').replace(/\s+/g, " ").trim().replace(/[.?!,]+$/, "").trim();
+
+function store(key, val) { try { if (val === undefined) return JSON.parse(localStorage.getItem(key) || "null"); localStorage.setItem(key, JSON.stringify(val)); } catch (e) { return null; } }
+let wrong = store("vx-wrong") || {};
+let best = store("vx-best") || null;
+const saveWrong = () => store("vx-wrong", wrong);
+
+function makeT1(idx) {
+  const item = T1[idx];
+  const correctText = cleanMeaning(item.m);
+  const pool = shuffle(T1.map((_, i) => i).filter(i => i !== idx));
+  const picks = []; const seen = new Set([correctText]);
+  for (const i of pool) { const t = cleanMeaning(T1[i].m); if (!seen.has(t)) { seen.add(t); picks.push(t); } if (picks.length === 4) break; }
+  const choices = shuffle([correctText, ...picks]);
+  return { type: 1, id: "t1:" + idx, word: item.w, choices, correct: choices.indexOf(correctText), meaning: item.m };
+}
+function questionFromId(id) {
+  if (id.startsWith("t1:")) { const i = +id.slice(3); return T1[i] ? makeT1(i) : null; }
+  return (id.startsWith("t2:") ? T2Q : T3Q).find(q => q.id === id) || null;
+}
+function check(q, val) {
+  if (q.type === 1) return val === q.correct;
+  if (val == null || !String(val).trim()) return false;
+  const a = norm(q.ans), v = norm(val);
+  return v === a || norm(q.ans[0] + val) === a;
+}
+function hint2(ans) { // r _ _ _ _ _ _ _
+  return ans.split("").map((c, i) => i === 0 ? c : c === " " ? "  " : c === "-" ? "-" : "_").join(" ").replace(/    /g, "   ");
+}
+function blankHTML(q) {
+  if (q.type === 2) return `<span class="blank">${esc(hint2(q.ans))}</span>`;
+  const n = q.ans.split(" ").length;
+  return `<span class="blank3">${esc(q.ans[0])}${" ".repeat(Math.max(10, q.ans.length + 2))}</span><span class="muted small"> (${n}단어)</span>`;
+}
+function fullWithMark(q) { return `${esc(q.before)}<mark>${esc(q.ans)}</mark>${esc(q.after)}`; }
+
+/* ===================== 화면: 홈 ===================== */
+let timerId = null;
+function stopTimer() { if (timerId) { clearInterval(timerId); timerId = null; } }
+
+function home() {
+  stopTimer();
+  const wc = Object.keys(wrong).length;
+  app.innerHTML = `
+  <header class="top">
+    <div>
+      <div class="eyebrow">12주차 · 11월 23–27일 · 조준호t 수업</div>
+      <h1>어휘 수행평가 모의고사</h1>
+    </div>
+    <p class="muted small">총 25문항 · 10분 · 반영 10%</p>
+  </header>
+  <div class="facts">
+    <div class="fact"><span class="muted small">Task 1 · 뜻 고르기</span><b>15문항</b><span class="muted small">출제 범위 ${T1.length}단어</span></div>
+    <div class="fact"><span class="muted small">Task 2 · 빈칸 단어 쓰기</span><b>5문항</b><span class="muted small">교과서 예문 ${T2Q.length}개</span></div>
+    <div class="fact"><span class="muted small">Task 3 · 표현 완성</span><b>5문항</b><span class="muted small">Quotes ${T3Q.length}개</span></div>
+    <div class="fact"><span class="muted small">최고 점수 (모의고사)</span><b>${best ? best.score + " / 25" : "—"}</b><span class="muted small">${best ? esc(best.date) : "아직 기록 없음"}</span></div>
+  </div>
+  <div class="modes">
+    <button class="mode primary" data-go="exam"><span class="eyebrow">실전</span><strong>모의고사 25문항</strong><span class="muted small">실제 시험처럼 Task 1·2·3을 한 장에 출제하고, 10분 타이머가 끝나면 자동 채점합니다.</span><span class="count">15 + 5 + 5 · 10:00</span></button>
+    <button class="mode" data-go="p1"><span class="eyebrow">Task 1 연습</span><strong>단어 뜻 고르기</strong><span class="muted small">범위 단어 전체를 5지선다로 하나씩 풉니다. 숫자키 1–5로 답할 수 있습니다.</span><span class="count">${T1.length}문항 · 무작위 순서</span></button>
+    <button class="mode" data-go="p2"><span class="eyebrow">Task 2 연습</span><strong>교과서 예문 빈칸</strong><span class="muted small">첫 글자와 철자 수만 보고 밑줄 단어를 씁니다.</span><span class="count">${T2Q.length}문항</span></button>
+    <button class="mode" data-go="p3"><span class="eyebrow">Task 3 연습</span><strong>Quotes 표현 완성</strong><span class="muted small">우리말 해석에 맞게 빈칸 표현을 어법대로 씁니다.</span><span class="count">${T3Q.length}문항</span></button>
+    <button class="mode" data-go="wrong" ${wc ? "" : "disabled"}><span class="eyebrow">오답노트</span><strong>틀린 문제 다시 풀기</strong><span class="muted small">맞히면 오답노트에서 빠집니다.</span><span class="count">${wc}문항 저장됨</span></button>
+    <button class="mode" data-go="study"><span class="eyebrow">자료</span><strong>범위 자료 보기</strong><span class="muted small">단어장 검색, 교과서 예문, Quotes 원문을 확인합니다.</span><span class="count">검색 가능</span></button>
+  </div>
+  <p class="muted small">채점 기준: 스펠링·어법 오류는 부분점수 없이 오답 처리됩니다. 대소문자와 문장 끝 마침표는 구분하지 않습니다. 빈칸에는 첫 글자를 포함해 전체 단어(표현)를 쓰세요.</p>`;
+  app.querySelectorAll("[data-go]").forEach(b => b.onclick = () => {
+    const g = b.dataset.go;
+    if (g === "exam") exam();
+    else if (g === "p1") practice(shuffle(T1.map((_, i) => i)).map(makeT1), "Task 1 연습");
+    else if (g === "p2") practice(shuffle(T2Q), "Task 2 연습");
+    else if (g === "p3") practice(shuffle(T3Q), "Task 3 연습");
+    else if (g === "wrong") practice(shuffle(Object.keys(wrong)).map(questionFromId).filter(Boolean), "오답노트", true);
+    else if (g === "study") study("t1");
+  });
+  window.scrollTo(0, 0);
+}
+
+/* ===================== 화면: 실전 모의고사 ===================== */
+function pickDistinct(arr, n) { // avoid two blanks from the same sentence
+  const out = [], used = new Set();
+  for (const q of shuffle(arr)) { if (used.has(q.si)) continue; used.add(q.si); out.push(q); if (out.length === n) break; }
+  return out;
+}
+function exam() {
+  stopTimer();
+  const qs = [
+    ...shuffle(T1.map((_, i) => i)).slice(0, 15).map(makeT1),
+    ...pickDistinct(T2Q, 5),
+    ...pickDistinct(T3Q, 5),
+  ];
+  const answers = new Array(qs.length).fill(null);
+  let left = 600, done = false;
+
+  const sec = (type, title, sub) => `<div class="task-head"><span class="task-tag">Task ${type}</span><h2>${title}</h2><span class="muted small">${sub}</span></div>`;
+  let html = `<div class="timerbar"><button class="btn" id="quit">← 나가기</button><span class="clock" id="clock">10:00</span><button class="btn solid" id="submit">제출하고 채점</button></div>
+  <div id="result"></div><div class="sheet" id="sheet">`;
+  qs.forEach((q, i) => {
+    if (i === 0) html += sec(1, "주어진 단어에 가장 적절한 우리말 뜻을 고르시오.", "(총 15문항)");
+    if (i === 15) html += sec(2, "우리말 해석을 참고하여 다음 빈칸에 들어갈 가장 적절한 단어를 쓰시오. (단, 철자 개수에 맞게 쓸 것)", "(총 5문항)");
+    if (i === 20) html += sec(3, "다음 빈칸에 들어갈 표현을 채워 주어진 우리말 해석에 맞게 영어 문장을 완성하시오. (단, 어법에 맞게 쓸 것)", "(총 5문항)");
+    html += `<div class="q" id="q${i}">`;
+    if (q.type === 1) {
+      html += `<div><span class="qnum">(${i + 1})</span><span class="word">${esc(q.word)}</span></div><div class="choices">` +
+        q.choices.map((c, k) => `<button class="choice" data-q="${i}" data-k="${k}"><span class="bubble">${k + 1}</span><span>${esc(c)}</span></button>`).join("") + `</div>`;
+    } else if (q.type === 2) {
+      html += `<div><span class="qnum">(${i + 1})</span><span class="ko">${esc(q.ko)}</span></div><div class="en">${esc(q.before)}${blankHTML(q)}${esc(q.after)}</div>
+        <input class="ans-input" id="in${i}" data-q="${i}" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="정답 단어 전체를 쓰세요">`;
+    } else {
+      html += `<div><span class="qnum">(${i + 1})</span><span class="en">${esc(q.before)}${blankHTML(q)}${esc(q.after)}</span></div><div class="ko">(${esc(q.ko)})</div>
+        <input class="ans-input" id="in${i}" data-q="${i}" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="빈칸 표현 전체를 쓰세요">`;
+    }
+    html += `<div class="fb" id="fb${i}"></div></div>`;
+  });
+  html += `</div><div class="row spread"><button class="btn" id="quit2">← 처음으로</button><button class="btn solid" id="submit2">제출하고 채점</button></div>`;
+  app.innerHTML = html;
+
+  app.querySelectorAll(".choice").forEach(b => b.onclick = () => {
+    if (done) return;
+    const qi = +b.dataset.q, k = +b.dataset.k;
+    answers[qi] = k;
+    app.querySelectorAll(`.choice[data-q="${qi}"]`).forEach(x => x.classList.toggle("sel", +x.dataset.k === k));
+  });
+  app.querySelectorAll(".ans-input").forEach(inp => {
+    inp.oninput = () => { answers[+inp.dataset.q] = inp.value; };
+    inp.onkeydown = e => { if (e.key === "Enter") { const nx = $("#in" + (+inp.dataset.q + 1)); if (nx) nx.focus(); } };
+  });
+
+  const clock = $("#clock");
+  const tick = () => {
+    const m = Math.floor(left / 60), s = left % 60;
+    clock.textContent = `${m}:${String(s).padStart(2, "0")}`;
+    clock.classList.toggle("low", left <= 60);
+    if (left <= 0) { finish(true); return; }
+    left--;
+  };
+  tick(); timerId = setInterval(tick, 1000);
+
+  function finish(timeout) {
+    if (done) return; done = true; stopTimer();
+    let score = 0; const per = [0, 0, 0];
+    qs.forEach((q, i) => {
+      const ok = check(q, answers[i]);
+      if (ok) { score++; per[q.type - 1]++; delete wrong[q.id]; } else wrong[q.id] = (wrong[q.id] || 0) + 1;
+      const fb = $("#fb" + i);
+      if (q.type === 1) {
+        app.querySelectorAll(`.choice[data-q="${i}"]`).forEach(x => {
+          const k = +x.dataset.k; x.disabled = true;
+          if (k === q.correct) x.classList.add("right"); else if (k === answers[i]) x.classList.add("wrong");
+        });
+        if (!ok) fb.innerHTML = `<div class="feedback wrong">${answers[i] == null ? "미응답 · " : ""}정답 ${CIRC[q.correct]} — ${esc(q.word)}: ${esc(q.meaning)}</div>`;
+      } else {
+        const inp = $("#in" + i); inp.disabled = true; inp.classList.add(ok ? "right" : "wrong");
+        fb.innerHTML = ok ? `<div class="feedback right">정답</div>` : `<div class="feedback wrong">정답: <b>${esc(q.ans)}</b><span class="full">${fullWithMark(q)}</span></div>`;
+      }
+    });
+    saveWrong();
+    if (!best || score > best.score) { best = { score, date: new Date().toLocaleString("ko-KR") }; store("vx-best", best); }
+    app.querySelectorAll("#submit,#submit2").forEach(b => { b.textContent = "새 모의고사"; b.onclick = exam; });
+    $("#result").innerHTML = `<div class="sheet">
+      <div class="score"><span class="big">${score}<span class="muted" style="font-size:1.4rem"> / 25</span></span>
+      <span>${timeout ? "시간 종료로 자동 제출되었습니다." : `남은 시간 ${Math.floor((left + 1) / 60)}분 ${(left + 1) % 60}초에 제출했습니다.`}<br><span class="muted small">틀린 ${25 - score}문항은 오답노트에 저장했습니다.</span></span></div>
+      <div class="breakdown"><div>Task 1<br><b>${per[0]} / 15</b></div><div>Task 2<br><b>${per[1]} / 5</b></div><div>Task 3<br><b>${per[2]} / 5</b></div></div>
+      <div class="row"><button class="btn solid" id="again">새 모의고사</button><button class="btn" id="home2">처음으로</button></div></div>`;
+    $("#again").onclick = exam; $("#home2").onclick = home;
+    window.scrollTo(0, 0);
+  }
+  $("#submit").onclick = () => finish(false);
+  $("#submit2").onclick = () => finish(false);
+  $("#quit").onclick = home; $("#quit2").onclick = home;
+  window.scrollTo(0, 0);
+}
+
+/* ===================== 화면: 한 문제씩 연습 ===================== */
+function practice(qs, title, isReview) {
+  stopTimer();
+  if (!qs.length) { home(); return; }
+  let i = 0, correct = 0, answered = false;
+  const missed = [];
+
+  function render() {
+    const q = qs[i]; answered = false;
+    const pct = Math.round(i / qs.length * 100);
+    let body = "";
+    if (q.type === 1) {
+      body = `<div><span class="word">${esc(q.word)}</span></div><div class="choices">` +
+        q.choices.map((c, k) => `<button class="choice" data-k="${k}"><span class="bubble">${k + 1}</span><span>${esc(c)}</span></button>`).join("") + `</div>`;
+    } else if (q.type === 2) {
+      body = `<div class="ko">${esc(q.ko)} <span class="muted small">· Unit ${esc(q.unit)}</span></div><div class="en">${esc(q.before)}${blankHTML(q)}${esc(q.after)}</div>
+        <div class="row"><input class="ans-input" id="pin" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="정답 단어 전체"><button class="btn solid" id="ok">확인</button></div>`;
+    } else {
+      body = `<div class="en">${esc(q.before)}${blankHTML(q)}${esc(q.after)}</div><div class="ko">(${esc(q.ko)})</div>
+        <div class="row"><input class="ans-input" id="pin" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="빈칸 표현 전체"><button class="btn solid" id="ok">확인</button></div>`;
+    }
+    app.innerHTML = `
+      <div class="timerbar"><button class="btn" id="quit">← 나가기</button><span class="small"><b>${esc(title)}</b> · <span class="clock" style="font-size:1rem">${i + 1} / ${qs.length}</span> · 정답 ${correct}</span></div>
+      <div class="progress"><i style="width:${pct}%"></i></div>
+      <div class="sheet"><div class="q">${body}<div id="fb"></div></div>
+      <div class="row spread"><span class="muted small">${q.type === 1 ? '<span class="kbd">1</span>–<span class="kbd">5</span> 선택 · ' : ""}<span class="kbd">Enter</span> ${q.type === 1 ? "다음" : "확인 / 다음"}</span><button class="btn" id="next" hidden>다음 →</button></div></div>`;
+    $("#quit").onclick = summary;
+    $("#next").onclick = next;
+    if (q.type === 1) app.querySelectorAll(".choice").forEach(b => b.onclick = () => answer(+b.dataset.k));
+    else { const inp = $("#pin"); inp.focus(); $("#ok").onclick = () => answer(inp.value); }
+  }
+  function answer(val) {
+    if (answered) return; answered = true;
+    const q = qs[i], ok = check(q, val);
+    if (ok) { correct++; if (wrong[q.id]) delete wrong[q.id]; }
+    else { missed.push(q); wrong[q.id] = (wrong[q.id] || 0) + 1; }
+    saveWrong();
+    const fb = $("#fb");
+    if (q.type === 1) {
+      app.querySelectorAll(".choice").forEach(x => { const k = +x.dataset.k; x.disabled = true; if (k === q.correct) x.classList.add("right"); else if (k === val) x.classList.add("wrong"); });
+      fb.innerHTML = `<div class="feedback ${ok ? "right" : "wrong"}">${ok ? "정답" : "오답"} — <b>${esc(q.word)}</b>: ${esc(q.meaning)}</div>`;
+    } else {
+      const inp = $("#pin"); inp.disabled = true; inp.classList.add(ok ? "right" : "wrong"); $("#ok").hidden = true;
+      fb.innerHTML = `<div class="feedback ${ok ? "right" : "wrong"}">${ok ? "정답" : `오답 · 정답: <b>${esc(q.ans)}</b>`}<span class="full">${fullWithMark(q)}</span></div>`;
+    }
+    $("#next").hidden = false; $("#next").focus();
+  }
+  function next() { i++; if (i >= qs.length) summary(); else render(); }
+  function summary() {
+    document.onkeydown = null;
+    const total = answered ? i + 1 : i;
+    app.innerHTML = `<div class="sheet">
+      <div class="eyebrow">${esc(title)} 결과</div>
+      <div class="score"><span class="big">${correct}<span class="muted" style="font-size:1.4rem"> / ${total}</span></span><span class="muted">${total ? Math.round(correct / total * 100) : 0}% 정답</span></div>
+      ${missed.length ? `<h3>틀린 문제 ${missed.length}개</h3><div class="list">${missed.map(q => q.type === 1
+        ? `<div class="li"><b>${esc(q.word)}</b><span>${esc(q.meaning)}</span></div>`
+        : `<div class="li block"><span>${fullWithMark(q)}</span><span class="muted small">${esc(q.ko)}</span></div>`).join("")}</div>` : `<p>틀린 문제가 없습니다.</p>`}
+      <div class="row">${missed.length ? `<button class="btn solid" id="redo">틀린 것만 다시</button>` : ""}<button class="btn" id="home2">처음으로</button></div></div>`;
+    if (missed.length) $("#redo").onclick = () => practice(shuffle(missed.map(q => q.type === 1 ? questionFromId(q.id) : q)), title + " · 다시");
+    $("#home2").onclick = home;
+    window.scrollTo(0, 0);
+  }
+  document.onkeydown = e => {
+    if (!app.querySelector("#fb")) return;
+    const q = qs[i];
+    if (q.type === 1 && !answered && /^[1-5]$/.test(e.key)) { answer(+e.key - 1); return; }
+    if (e.key === "Enter") {
+      if (answered) { e.preventDefault(); next(); }
+      else if (q.type !== 1 && document.activeElement && document.activeElement.id === "pin") { e.preventDefault(); answer($("#pin").value); }
+    }
+  };
+  render();
+}
+
+/* ===================== 화면: 자료 보기 ===================== */
+function study(tab) {
+  stopTimer(); document.onkeydown = null;
+  const tabs = [["t1", `단어장 (${T1.length})`], ["t2", `교과서 예문 (${T2RAW.split("\n").length})`], ["t3", `Quotes (${T3RAW.split("\n").length})`]];
+  app.innerHTML = `<div class="row spread"><button class="btn" id="back">← 처음으로</button><div class="tabs">${tabs.map(([k, l]) => `<button class="tab ${k === tab ? "on" : ""}" data-tab="${k}">${l}</button>`).join("")}</div></div>
+    <input class="search" id="q" placeholder="영어 또는 우리말로 검색" autocomplete="off">
+    <div class="sheet"><div class="list" id="list"></div></div>`;
+  $("#back").onclick = home;
+  app.querySelectorAll("[data-tab]").forEach(b => b.onclick = () => study(b.dataset.tab));
+  const markLine = en => esc(en).replace(/\[\[(.+?)\]\]/g, "<mark>$1</mark>");
+  const draw = () => {
+    const f = $("#q").value.trim().toLowerCase();
+    let rows;
+    if (tab === "t1") rows = T1.filter(x => !f || x.w.toLowerCase().includes(f) || x.m.includes(f)).map(x => `<div class="li"><b>${esc(x.w)}</b><span>${esc(x.m)}</span></div>`);
+    else if (tab === "t2") rows = T2RAW.split("\n").map(l => l.split(" | ")).filter(p => !f || p.join(" ").toLowerCase().includes(f)).map(([u, en, ko]) => `<div class="li block"><span class="eyebrow">Unit ${esc(u)}</span><span>${markLine(en)}</span><span class="muted small">${esc(ko)}</span></div>`);
+    else rows = T3RAW.split("\n").map(l => l.split(" | ")).filter(p => !f || p.join(" ").toLowerCase().includes(f)).map(([en, ko]) => `<div class="li block"><span>${markLine(en)}</span><span class="muted small">${esc(ko)}</span></div>`);
+    $("#list").innerHTML = rows.length ? rows.join("") : `<p class="muted">검색 결과가 없습니다.</p>`;
+  };
+  $("#q").oninput = draw; draw();
+  window.scrollTo(0, 0);
+}
+
+home();
+</script>
