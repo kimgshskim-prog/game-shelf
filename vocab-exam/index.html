@@ -121,6 +121,20 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .li b { overflow-wrap: anywhere; }
 .li.block { display: flex; flex-direction: column; gap: 2px; }
 .search { font: inherit; width: 100%; padding: 8px 12px; border: 1px solid var(--rule); border-radius: 6px; background: var(--sheet); color: var(--ink); }
+.knownbar { display: flex; flex-direction: column; gap: 10px; background: var(--sheet); border: 1px solid var(--rule); border-radius: 8px; padding: 12px; }
+.kstat { display: flex; flex-direction: column; gap: 6px; font-variant-numeric: tabular-nums; }
+.kstat b { font-family: var(--font-mono); color: var(--omr); }
+.li.kn { display: flex; flex-direction: row; gap: 12px; align-items: flex-start; }
+.li.kn .body { flex: 1; min-width: 0; display: grid; grid-template-columns: minmax(110px, 38%) 1fr; gap: 12px; }
+.li.kn.block .body { display: flex; flex-direction: column; gap: 2px; }
+.check { flex: none; width: 30px; height: 30px; border-radius: 50%; border: 1.5px solid var(--rule); background: transparent; color: transparent; font-weight: 700; display: grid; place-items: center; }
+.check:hover { border-color: var(--ok); color: var(--ok); }
+.li.is-known .check { background: var(--ok); border-color: var(--ok); color: var(--sheet); }
+.li.is-known .body { opacity: .55; }
+.hidemean .li.kn .mean { filter: blur(6px); user-select: none; cursor: pointer; }
+.hidemean .li.kn.peek .mean { filter: none; }
+.btn[disabled] { opacity: .45; cursor: not-allowed; }
+@media (max-width: 480px) { .li.kn .body { grid-template-columns: 1fr; gap: 0; } }
 .kbd { font-family: var(--font-mono); font-size: .75rem; border: 1px solid var(--rule); border-radius: 4px; padding: 0 5px; }
 @media (max-width: 480px) { .li { grid-template-columns: 1fr; gap: 0; } .score .big { font-size: 2.4rem; } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
@@ -1305,22 +1319,66 @@ function practice(qs, title, isReview) {
 }
 
 /* ===================== 화면: 자료 보기 ===================== */
+let known = store("vx-known") || {};
+const saveKnown = () => store("vx-known", known);
+let studyFilter = "all", hideMeaning = false;
+
 function study(tab) {
   stopTimer(); document.onkeydown = null;
-  const tabs = [["t1", `단어장 (${T1.length})`], ["t2", `교과서 예문 (${T2RAW.split("\n").length})`], ["t3", `Quotes (${T3RAW.split("\n").length})`]];
+  const T2L = T2RAW.split("\n").map(l => l.split(" | "));
+  const T3L = T3RAW.split("\n").map(l => l.split(" | "));
+  const items = tab === "t1"
+    ? T1.map((x, i) => ({ key: "k1:" + i, search: (x.w + " " + x.m).toLowerCase(), html: `<b>${esc(x.w)}</b><span class="mean">${esc(x.m)}</span>`, block: false, qs: () => [makeT1(i)] }))
+    : (tab === "t2" ? T2L : T3L).map((p, i) => {
+        const [u, en, ko] = tab === "t2" ? p : ["", p[0], p[1]];
+        return { key: (tab === "t2" ? "k2:" : "k3:") + i, search: (en + " " + ko).toLowerCase(), block: true,
+          html: `${u ? `<span class="eyebrow">Unit ${esc(u)}</span>` : ""}<span>${esc(en).replace(/\[\[(.+?)\]\]/g, "<mark>$1</mark>")}</span><span class="muted small mean">${esc(ko)}</span>`,
+          qs: () => (tab === "t2" ? T2Q : T3Q).filter(q => q.si === i) };
+      });
+  const tabs = [["t1", `단어장 (${T1.length})`], ["t2", `교과서 예문 (${T2L.length})`], ["t3", `Quotes (${T3L.length})`]];
   app.innerHTML = `<div class="row spread"><button class="btn" id="back">← 처음으로</button><div class="tabs">${tabs.map(([k, l]) => `<button class="tab ${k === tab ? "on" : ""}" data-tab="${k}">${l}</button>`).join("")}</div></div>
+    <div class="knownbar">
+      <div class="kstat"><span id="kcount"></span><div class="progress"><i id="kbar"></i></div></div>
+      <div class="row">
+        <div class="tabs" role="group" aria-label="표시 필터">
+          <button class="tab" data-f="all">전체</button><button class="tab" data-f="unknown">모르는 것만</button><button class="tab" data-f="known">아는 것만</button>
+        </div>
+        <button class="tab" id="hide">${tab === "t1" ? "뜻" : "해석"} 가리기</button>
+      </div>
+    </div>
     <input class="search" id="q" placeholder="영어 또는 우리말로 검색" autocomplete="off">
+    <div class="row"><button class="btn solid" id="drill">모르는 것만 연습하기</button><span class="muted small">체크 버튼을 누르면 '알아요'로 표시됩니다. 가리기를 켜면 항목을 눌러 뜻을 볼 수 있습니다.</span></div>
     <div class="sheet"><div class="list" id="list"></div></div>`;
   $("#back").onclick = home;
   app.querySelectorAll("[data-tab]").forEach(b => b.onclick = () => study(b.dataset.tab));
-  const markLine = en => esc(en).replace(/\[\[(.+?)\]\]/g, "<mark>$1</mark>");
+  app.querySelectorAll("[data-f]").forEach(b => b.onclick = () => { studyFilter = b.dataset.f; draw(); });
+  $("#hide").onclick = () => { hideMeaning = !hideMeaning; draw(); };
+  $("#drill").onclick = () => {
+    const qs = items.filter(it => !known[it.key]).flatMap(it => it.qs());
+    if (!qs.length) return;
+    practice(shuffle(qs), tabs.find(t => t[0] === tab)[1].replace(/ \(.*/, "") + " · 모르는 것");
+  };
   const draw = () => {
     const f = $("#q").value.trim().toLowerCase();
-    let rows;
-    if (tab === "t1") rows = T1.filter(x => !f || x.w.toLowerCase().includes(f) || x.m.includes(f)).map(x => `<div class="li"><b>${esc(x.w)}</b><span>${esc(x.m)}</span></div>`);
-    else if (tab === "t2") rows = T2RAW.split("\n").map(l => l.split(" | ")).filter(p => !f || p.join(" ").toLowerCase().includes(f)).map(([u, en, ko]) => `<div class="li block"><span class="eyebrow">Unit ${esc(u)}</span><span>${markLine(en)}</span><span class="muted small">${esc(ko)}</span></div>`);
-    else rows = T3RAW.split("\n").map(l => l.split(" | ")).filter(p => !f || p.join(" ").toLowerCase().includes(f)).map(([en, ko]) => `<div class="li block"><span>${markLine(en)}</span><span class="muted small">${esc(ko)}</span></div>`);
-    $("#list").innerHTML = rows.length ? rows.join("") : `<p class="muted">검색 결과가 없습니다.</p>`;
+    const k = items.filter(it => known[it.key]).length;
+    $("#kcount").innerHTML = `아는 것 <b>${k}</b> / ${items.length} · 남은 것 <b>${items.length - k}</b>`;
+    $("#kbar").style.width = (items.length ? k / items.length * 100 : 0) + "%";
+    app.querySelectorAll("[data-f]").forEach(b => b.classList.toggle("on", b.dataset.f === studyFilter));
+    $("#hide").classList.toggle("on", hideMeaning);
+    $("#drill").disabled = k === items.length;
+    const rows = items.filter(it => (!f || it.search.includes(f)) &&
+      (studyFilter === "all" || (studyFilter === "known") === !!known[it.key]));
+    $("#list").classList.toggle("hidemean", hideMeaning);
+    $("#list").innerHTML = rows.length ? rows.map(it => `<div class="li kn ${it.block ? "block" : ""} ${known[it.key] ? "is-known" : ""}" data-key="${it.key}">
+        <button class="check" data-k="${it.key}" aria-pressed="${!!known[it.key]}" aria-label="아는 것으로 표시">✓</button><div class="body">${it.html}</div></div>`).join("")
+      : `<p class="muted">${f ? "검색 결과가 없습니다." : studyFilter === "unknown" ? "모두 아는 것으로 표시했습니다." : "표시한 항목이 없습니다."}</p>`;
+    app.querySelectorAll(".check").forEach(b => b.onclick = e => {
+      e.stopPropagation();
+      const key = b.dataset.k;
+      if (known[key]) delete known[key]; else known[key] = 1;
+      saveKnown(); draw();
+    });
+    app.querySelectorAll(".li.kn").forEach(r => r.onclick = () => { if (hideMeaning) r.classList.toggle("peek"); });
   };
   $("#q").oninput = draw; draw();
   window.scrollTo(0, 0);
