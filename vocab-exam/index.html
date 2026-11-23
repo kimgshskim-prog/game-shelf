@@ -90,6 +90,17 @@ header.top { display: flex; justify-content: space-between; align-items: flex-en
 .ko { color: var(--muted); }
 .en { font-size: 1.05rem; overflow-wrap: anywhere; }
 .blank { font-family: var(--font-mono); color: var(--omr); white-space: nowrap; letter-spacing: .12em; font-weight: 600; }
+.slots { display: inline-flex; flex-wrap: wrap; align-items: flex-end; gap: 3px; vertical-align: bottom; margin: 0 4px; cursor: text; }
+.slots .cell { width: 1.15em; height: 1.55em; border-bottom: 2px solid var(--omr); font-family: var(--font-mono); font-weight: 600; text-align: center; line-height: 1.5em; color: var(--ink); }
+.slots .cell.hint:not(.filled) { color: var(--muted); }
+.slots .cell.cur { background: var(--omr-soft); }
+.slots .gap { width: .7em; }
+.slots .dash { font-family: var(--font-mono); color: var(--omr); font-weight: 600; }
+.slots .slotcount { font-family: var(--font-mono); font-size: .75rem; color: var(--muted); margin-left: 6px; align-self: center; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.slots.full .cell { border-color: var(--ok); }
+.slots.full .slotcount { color: var(--ok); }
+.slots.over .cell { border-color: var(--bad); }
+.slots.over .slotcount, .overtxt { color: var(--bad) !important; }
 .blank3 { font-family: var(--font-mono); color: var(--omr); font-weight: 600; border-bottom: 1.5px solid var(--omr); padding: 0 2px; }
 .ans-input { font: inherit; font-family: var(--font-mono); width: 100%; max-width: 420px; padding: 8px 10px; border: 1px solid var(--rule); border-radius: 6px; background: var(--paper); color: var(--ink); }
 .ans-input.right { border-color: var(--ok); background: var(--ok-soft); }
@@ -1101,10 +1112,45 @@ function hint2(ans) { // r _ _ _ _ _ _ _
   return ans.split("").map((c, i) => i === 0 ? c : c === " " ? "  " : c === "-" ? "-" : "_").join(" ").replace(/    /g, "   ");
 }
 function blankHTML(q) {
-  if (q.type === 2) return `<span class="blank">${esc(hint2(q.ans))}</span>`;
+  if (q.type === 2) {
+    let k = 0;
+    const cells = q.ans.split("").map(c => {
+      if (c === " ") return `<span class="gap"></span>`;
+      if (c === "-") return `<span class="dash">-</span>`;
+      const first = k === 0; k++;
+      return `<span class="cell${first ? " hint" : ""}" data-hint="${first ? esc(c) : ""}">${first ? esc(c) : ""}</span>`;
+    }).join("");
+    return `<span class="slots" data-n="${k}">${cells}<span class="slotcount">0/${k}</span></span>`;
+  }
   const n = q.ans.split(" ").length;
-  return `<span class="blank3">${esc(q.ans[0])}${" ".repeat(Math.max(10, q.ans.length + 2))}</span><span class="muted small"> (${n}단어)</span>`;
+  return `<span class="blank3">${esc(q.ans[0])}${" ".repeat(Math.max(10, q.ans.length + 2))}</span><span class="muted small wc" data-n="${n}"> (${n}단어)</span>`;
 }
+// 입력할 때마다 칸을 채워 보여줌 (Task 2: 글자 칸 / Task 3: 단어 수)
+function syncSlots(inp) {
+  const box = inp.closest(".q"); if (!box) return;
+  const slots = box.querySelector(".slots");
+  if (slots) {
+    const letters = inp.value.replace(/[\s-]/g, "").split("");
+    const cells = slots.querySelectorAll(".cell"), n = cells.length;
+    cells.forEach((c, i) => {
+      const ch = letters[i];
+      c.textContent = ch !== undefined ? ch : c.dataset.hint;
+      c.classList.toggle("filled", ch !== undefined);
+      c.classList.toggle("cur", i === letters.length);
+    });
+    slots.classList.toggle("over", letters.length > n);
+    slots.classList.toggle("full", letters.length === n);
+    slots.querySelector(".slotcount").textContent = letters.length > n ? `${letters.length}/${n} · ${letters.length - n}글자 초과` : `${letters.length}/${n}`;
+  }
+  const wc = box.querySelector(".wc");
+  if (wc) {
+    const n = +wc.dataset.n, t = inp.value.trim() ? inp.value.trim().split(/\s+/).length : 0;
+    wc.textContent = t ? ` (${t}/${n}단어)` : ` (${n}단어)`;
+    wc.classList.toggle("overtxt", t > n);
+  }
+}
+document.addEventListener("input", e => { if (e.target.classList && e.target.classList.contains("ans-input")) syncSlots(e.target); });
+document.addEventListener("click", e => { const s = e.target.closest && e.target.closest(".slots"); if (s) { const inp = s.closest(".q").querySelector(".ans-input"); if (inp && !inp.disabled) inp.focus(); } });
 function fullWithMark(q) { return `${esc(q.before)}<mark>${esc(q.ans)}</mark>${esc(q.after)}`; }
 
 /* ===================== 화면: 홈 ===================== */
